@@ -1,0 +1,109 @@
+<svelte:body on:keydown={close} />
+
+<div 
+	bind:this={trigger} 
+	on:click={e => open = true} 
+	class:open 
+	class="trigger" 
+	style="transition: opacity {speed * 0.2 / 1000}s {speed * 0.8 / 1000}s;"
+>
+	<slot name="trigger">
+		<button type="button">To replace trigger use 'trigger' slot</button>
+	</slot>
+</div>
+
+{#if open}
+	{#if overlay}
+	<div 
+		transition:fade={{ duration: speed }} 
+		on:click={e => open = false} 
+		class="overlay"
+	></div>
+	{/if}
+	<div 
+		transition:morph={{ from, duration: speed }} 
+		class="modal" 
+		style="
+			width:{width}; height:{height};
+			margin-left:calc(-{width}/2);
+			margin-top:calc(-{height}/2);
+		"
+	>
+		<div 
+			in:blur={{ delay: speed * 0.6, duration: speed }}
+			out:blur={{ duration: speed * 0.6 }}
+		>
+			<slot>To replace content use default slot</slot>
+		</div>
+	</div>
+{/if}
+
+<script>
+	import { afterUpdate } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import morph from 'svelte-transitions-morph';
+	import blur from 'svelte-transitions-blur';
+	
+	export let open = false,
+			overlay = true,
+			esc = true,
+			width = '500px',
+			height = '300px',
+			speed = 800;
+
+	let trigger, from;
+
+	afterUpdate(() => {
+		from = trigger.getBoundingClientRect();
+	});
+	
+	function close(e) {
+		if (esc && open && (e.keyCode || e.which) == 27) {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+			open = false;
+		}
+	}
+</script>
+
+<style>
+	.overlay { 
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 800;
+		position: fixed;
+		overflow: hidden;
+		background: rgba(0, 0, 0, .5);
+	}
+	.modal {
+		top: 50%;
+		left: 50%;
+		z-index: 900;
+		position: fixed;
+		overflow: hidden;
+		transform-origin: 0 0;
+	}
+	.modal > div { 
+		width: 100%;
+		height: 100%;
+		position: relative;
+	}
+	.trigger.open { 
+		opacity: 0; 
+		pointer-events: none;
+		transition: opacity .1s !important;
+	}
+	@media screen and (max-width: 600px) {
+		.modal {
+			top: 0% !important;
+			left: 0% !important;
+			margin: 0 !important;
+			width: 100% !important;
+			height: 100% !important;
+			transform: none !important;
+		}
+	}
+</style>

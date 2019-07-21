@@ -1,3 +1,4 @@
+<svelte:window bind:innerWidth />
 <svelte:body on:keydown={close} />
 
 <div 
@@ -22,15 +23,17 @@
 	{/if}
 	<div 
 		transition:morph={{ from, duration: speed }} 
+		class:sm={fullscreen === 'mobile'} 
+		class:fs 
 		class="modal" 
 		style="
 			width:{width}; height:{height};
-			margin-left:calc(-{width}/2);
-			margin-top:calc(-{height}/2);
+			margin-left: calc(-{width}/2);
+			margin-top: calc(-{height}/2);
 		"
 	>
 		<div 
-			in:blur={{ delay: speed * 0.6, duration: speed }}
+			in:blur={{ delay: speed * 0.6, duration: speed }} 
 			out:blur={{ duration: speed * 0.6 }}
 		>
 			<slot>To replace content use default slot</slot>
@@ -45,30 +48,33 @@
 	import blur from 'svelte-transitions-blur';
 	
 	export let open = false,
-			overlay = true,
-			esc = true,
-			width = '500px',
-			height = '300px',
-			speed = 800;
+		overlay = true,
+		esc = true,
+		fullscreen = 'auto', // true (always), false (never), 'mobile', 'auto'
+		height = '300px',
+		width = '500px',
+		speed = 800;
 
-	let trigger, from;
+	let trigger, from, innerWidth, fs = false;
 
 	afterUpdate(() => {
 		from = trigger.getBoundingClientRect();
 	});
 	
+	$: fs = fullscreen === true || (fullscreen === 'auto' && parseFloat(width) > innerWidth);
+	
 	function close(e) {
 		if (esc && open && (e.keyCode || e.which) == 27) {
-			e.preventDefault();
-			e.stopPropagation();
 			e.stopImmediatePropagation();
+			e.stopPropagation();
+			e.preventDefault();
 			open = false;
 		}
 	}
 </script>
 
 <style>
-	.overlay { 
+	.overlay {
 		top: 0;
 		left: 0;
 		width: 100%;
@@ -86,18 +92,27 @@
 		overflow: hidden;
 		transform-origin: 0 0;
 	}
-	.modal > div { 
+	.modal > div {
 		width: 100%;
 		height: 100%;
 		position: relative;
 	}
-	.trigger.open { 
+	.modal.fs {
+			top: 0% !important;
+			left: 0% !important;
+			margin: 0 !important;
+			width: 100% !important;
+			height: 100% !important;
+			transform: none !important;
+	}
+	.trigger { display: inline-block; }
+	.trigger.open {
 		opacity: 0; 
 		pointer-events: none;
 		transition: opacity .1s !important;
 	}
 	@media screen and (max-width: 600px) {
-		.modal {
+		.modal.sm {
 			top: 0% !important;
 			left: 0% !important;
 			margin: 0 !important;

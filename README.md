@@ -1,1 +1,1 @@
-# Svelte Morphing Modal for Svelte 3 [demo](https://v3.svelte.technology/repl?version=3.0.0-alpha17&gist=71c9a1507dc5dacf606c7950ef772f9a)
+# Svelte Morphing Modal for Svelte 3 [demo](https://svelte.dev/repl/ed678672e4cc43ad9e0538710d02fba2?version=3)

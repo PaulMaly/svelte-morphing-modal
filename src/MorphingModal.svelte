@@ -1,12 +1,12 @@
 <svelte:window bind:innerWidth />
 <svelte:body on:keydown={close} />
 
-<div 
-	bind:this={trigger} 
-	on:click={e => open = true} 
-	class:open 
-	class="trigger" 
-	style="transition: opacity {speed * 0.2 / 1000}s {speed * 0.8 / 1000}s;"
+<div
+	bind:this={trigger}
+	on:click={() => open = true}
+	class:open
+	class="trigger"
+	style="transition: opacity {duration * 0.2 / 1000}s {duration * 0.8 / 1000}s;"
 >
 	<slot name="trigger">
 		<button type="button">To replace trigger use 'trigger' slot</button>
@@ -15,26 +15,26 @@
 
 {#if open}
 	{#if overlay}
-	<div 
-		transition:fade={{ duration: speed }} 
-		on:click={e => open = false} 
+	<div
+		transition:fade={{ duration }}
+		on:click={() => open = false}
 		class="overlay"
 	></div>
 	{/if}
-	<div 
-		transition:morph={{ from, duration: speed }} 
-		class:sm={fullscreen === 'mobile'} 
-		class:fs 
-		class="modal" 
+	<div
+		transition:morph={{ from, duration }}
+		class:sm={fullscreen === 'mobile'}
+		class:fs
+		class="modal"
 		style="
 			width:{width}; height:{height};
 			margin-left: calc(-{width}/2);
 			margin-top: calc(-{height}/2);
 		"
 	>
-		<div 
-			in:blur={{ delay: speed * 0.6, duration: speed }} 
-			out:blur={{ duration: speed * 0.6 }}
+		<div
+			in:blur={{ duration }}
+			out:blur={{ duration }}
 		>
 			<slot>To replace content use default slot</slot>
 		</div>
@@ -44,25 +44,27 @@
 <script>
 	import { afterUpdate } from 'svelte';
 	import { fade } from 'svelte/transition';
+
 	import morph from 'svelte-transitions-morph';
 	import blur from 'svelte-transitions-blur';
-	
-	export let open = false,
-		overlay = true,
-		esc = true,
-		fullscreen = 'auto', // true (always), false (never), 'mobile', 'auto'
+
+	let fullscreen = 'auto', // true (always), false (never), 'mobile', 'auto'
 		height = '300px',
 		width = '500px',
-		speed = 800;
-
-	let trigger, from, innerWidth, fs = false;
+		overlay = true,
+		open = false,
+		duration = 800,
+		esc = true,
+		innerWidth,
+		trigger,
+		from;
 
 	afterUpdate(() => {
 		from = trigger.getBoundingClientRect();
 	});
-	
+
 	$: fs = fullscreen === true || (fullscreen === 'auto' && parseFloat(width) > innerWidth);
-	
+
 	function close(e) {
 		if (esc && open && (e.keyCode || e.which) == 27) {
 			e.stopImmediatePropagation();
@@ -71,6 +73,8 @@
 			open = false;
 		}
 	}
+
+	export { open, overlay, esc, fullscreen, height, width, duration as speed };
 </script>
 
 <style>
@@ -107,7 +111,7 @@
 	}
 	.trigger { display: inline-block; }
 	.trigger.open {
-		opacity: 0; 
+		opacity: 0;
 		pointer-events: none;
 		transition: opacity .1s !important;
 	}

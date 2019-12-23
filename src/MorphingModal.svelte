@@ -42,11 +42,12 @@
 {/if}
 
 <script>
-	import { afterUpdate } from 'svelte';
-	import { fade } from 'svelte/transition';
+	import { afterUpdate, createEventDispatcher } from 'svelte';
+	import { fade, blur } from 'svelte/transition';
 
 	import morph from 'svelte-transitions-morph';
-	import blur from 'svelte-transitions-blur';
+
+	const dispatch = createEventDispatcher();
 
 	let fullscreen = 'auto', // true (always), false (never), 'mobile', 'auto'
 		height = '300px',
@@ -64,6 +65,7 @@
 	});
 
 	$: fs = fullscreen === true || (fullscreen === 'auto' && parseFloat(width) > innerWidth);
+	$: dispatch('change', open);
 
 	function close(e) {
 		if (esc && open && (e.keyCode || e.which) == 27) {

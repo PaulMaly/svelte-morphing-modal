@@ -1,7 +1,8 @@
-<svelte:window bind:innerWidth />
+<svelte:window bind:innerWidth bind:innerHeight />
 <svelte:body on:keydown={close} />
 
 <div
+	use:lock={lockOptions}
 	bind:this={trigger}
 	on:click={() => open = true}
 	class:open
@@ -47,15 +48,19 @@
 
 	import morph from 'svelte-transitions-morph';
 
+	import lock from './lockScroll.js';
+
 	const dispatch = createEventDispatcher();
 
 	let fullscreen = 'auto', // true (always), false (never), 'mobile', 'auto'
 		height = '300px',
 		width = '500px',
+		lockScroll = true,
 		overlay = true,
 		open = false,
 		duration = 800,
 		esc = true,
+		innerHeight,
 		innerWidth,
 		trigger,
 		from;
@@ -65,7 +70,13 @@
 	});
 
 	$: fs = fullscreen === true || (fullscreen === 'auto' && parseFloat(width) > innerWidth);
-	$: dispatch('change', open);
+	$: lockOptions = {
+		enable: ( ! lockScroll || open ),
+		innerHeight
+	};
+
+	$: dispatch('toggle', open);
+	$: dispatch('adjust', fs);
 
 	function close(e) {
 		if (esc && open && (e.keyCode || e.which) == 27) {
@@ -76,7 +87,16 @@
 		}
 	}
 
-	export { open, overlay, esc, fullscreen, height, width, duration as speed };
+	export {
+		duration as speed,
+		fullscreen,
+		lockScroll,
+		overlay,
+		height,
+		width,
+		open,
+		esc
+	};
 </script>
 
 <style>
@@ -89,13 +109,14 @@
 		position: fixed;
 		overflow: hidden;
 		background: rgba(0, 0, 0, .5);
+		backdrop-filter: blur(5px);
 	}
 	.modal {
 		top: 50%;
 		left: 50%;
 		z-index: 900;
 		position: fixed;
-		overflow: hidden;
+		overflow: auto;
 		transform-origin: 0 0;
 	}
 	.modal > div {

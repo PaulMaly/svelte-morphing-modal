@@ -18,17 +18,19 @@ export default function(node, values) {
 		) return;
 
 		if (enabled) {
-			scrollTop = window.pageYOffset;
-			if (hasScroll) {
-				doc.style.width = `calc(100% - ${scrollbarSize}px)`;
-			} else {
-				doc.style.width = '100%';
-			}
-			doc.style.position = 'fixed';
-			doc.style.top = -scrollTop + 'px';
-			doc.style.overflow = 'hidden';
+			setTimeout(() => {
+				scrollTop = window.pageYOffset;
+				if (hasScroll) {
+					doc.style.width = `calc(100% - ${scrollbarSize}px)`;
+				} else {
+					doc.style.width = '100%';
+				}
+				doc.style.position = 'fixed';
+				doc.style.top = -scrollTop + 'px';
+				doc.style.overflow = 'hidden';
+			});
 		} else {
-			destroy();
+			setTimeout(destroy);
 		}
 	}
 

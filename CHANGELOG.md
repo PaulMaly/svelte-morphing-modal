@@ -2,6 +2,7 @@
 
 ## 1.3.1
 * Fix `lockScroll` enabled.
+* Add bundles to git.
 
 ## 1.3.0
 * Implement scroll disabling when modal is open & `lockScroll` prop.

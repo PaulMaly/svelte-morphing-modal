@@ -1195,7 +1195,6 @@
     	function rect(node) {
     		function update() {
     			$$invalidate(8, from = node.firstChild.getBoundingClientRect());
-    			console.log(from.x, from.y);
     		}
 
     		update();

@@ -1,6 +1,6 @@
 {
     "name": "svelte-morphing-modal",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "Morphing modal component for Svelte 3",
     "svelte": "src/index.js",
     "main": "index.js",

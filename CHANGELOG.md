@@ -1,5 +1,9 @@
 # svelte-morphing-modal changelog
 
+## 2.1.0
+* Improve bounting rect tracking.
+* Change opacity to visibility to hide trigger.
+
 ## 2.0.0
 * (BREAKING CHANGE): Now `trigget` slot become a default slot, put you content using `content` slot.
 * (BREAKING CHANGE): Use `display: contents` to trigger wrapping element.

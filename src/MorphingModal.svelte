@@ -3,11 +3,11 @@
 
 <div
 	use:lock={lockOptions}
-	bind:this={trigger}
+	use:rect={{ open, innerWidth, innerHeight, fs }}
 	on:click={() => (open = true)}
 	class:morph-open={open}
 	class="morph-trigger"
-	style="transition: opacity {(duration * 0.2) / 1000}s {(duration * 0.8) / 1000}s;"
+	style="transition: visibility {(duration * 0.2) / 1000}s {(duration * 0.8) / 1000}s;"
 >
 	<slot>
 		<button type="button">To replace trigger use default slot</button>
@@ -37,7 +37,7 @@
 {/if}
 
 <script>
-	import { afterUpdate, createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { fade, blur } from 'svelte/transition';
 
 	import morph from 'svelte-transitions-morph';
@@ -56,12 +56,16 @@
 		esc = true,
 		innerHeight,
 		innerWidth,
-		trigger,
 		from;
 
-	afterUpdate(() => {
-		from = trigger.getBoundingClientRect();
-	});
+	function rect(node) {
+		function update() {
+			from = node.firstChild.getBoundingClientRect();
+			console.log(from.x, from.y);
+		}
+		update();
+		return { update };
+	}
 
 	$: fs =
 		fullscreen === true ||
@@ -133,9 +137,9 @@
 		display: contents;
 	}
 	.morph-trigger.morph-open {
-		opacity: 0;
+		visibility: hidden;
 		pointer-events: none;
-		transition: opacity 0.1s !important;
+		transition: visibility 0.1s !important;
 	}
 	@media screen and (max-width: 600px) {
 		.morph-modal.morph-sm {

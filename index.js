@@ -221,9 +221,6 @@
             throw new Error('Function called outside component initialization');
         return current_component;
     }
-    function afterUpdate(fn) {
-        get_current_component().$$.after_update.push(fn);
-    }
     function createEventDispatcher() {
         const component = get_current_component();
         return (type, detail) => {
@@ -802,8 +799,8 @@
 
     function add_css() {
     	var style = element("style");
-    	style.id = "svelte-1boxp9l-style";
-    	style.textContent = ".morph-overlay.svelte-1boxp9l.svelte-1boxp9l{top:0;left:0;width:100%;height:100%;z-index:800;position:fixed;overflow:hidden;background:rgba(0, 0, 0, 0.5);backdrop-filter:blur(5px)}.morph-modal.svelte-1boxp9l.svelte-1boxp9l{top:50%;left:50%;z-index:900;position:fixed;overflow:auto;transform-origin:0 0}.morph-modal.svelte-1boxp9l>div.svelte-1boxp9l{width:100%;height:100%;position:relative}.morph-modal.morph-fs.svelte-1boxp9l.svelte-1boxp9l{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}.morph-trigger.svelte-1boxp9l.svelte-1boxp9l{display:contents}.morph-trigger.morph-open.svelte-1boxp9l.svelte-1boxp9l{opacity:0;pointer-events:none;transition:opacity 0.1s !important}@media screen and (max-width: 600px){.morph-modal.morph-sm.svelte-1boxp9l.svelte-1boxp9l{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}}";
+    	style.id = "svelte-1bv59i9-style";
+    	style.textContent = ".morph-overlay.svelte-1bv59i9.svelte-1bv59i9{top:0;left:0;width:100%;height:100%;z-index:800;position:fixed;overflow:hidden;background:rgba(0, 0, 0, 0.5);backdrop-filter:blur(5px)}.morph-modal.svelte-1bv59i9.svelte-1bv59i9{top:50%;left:50%;z-index:900;position:fixed;overflow:auto;transform-origin:0 0}.morph-modal.svelte-1bv59i9>div.svelte-1bv59i9{width:100%;height:100%;position:relative}.morph-modal.morph-fs.svelte-1bv59i9.svelte-1bv59i9{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}.morph-trigger.svelte-1bv59i9.svelte-1bv59i9{display:contents}.morph-trigger.morph-open.svelte-1bv59i9.svelte-1bv59i9{visibility:hidden;pointer-events:none;transition:visibility 0.1s !important}@media screen and (max-width: 600px){.morph-modal.morph-sm.svelte-1bv59i9.svelte-1bv59i9{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}}";
     	append(document.head, style);
     }
 
@@ -850,14 +847,14 @@
     			div1 = element("div");
     			div0 = element("div");
     			if (content_slot_or_fallback) content_slot_or_fallback.c();
-    			attr(div0, "class", "svelte-1boxp9l");
-    			attr(div1, "class", "morph-modal svelte-1boxp9l");
+    			attr(div0, "class", "svelte-1bv59i9");
+    			attr(div1, "class", "morph-modal svelte-1bv59i9");
     			set_style(div1, "width", /*width*/ ctx[3]);
     			set_style(div1, "height", /*height*/ ctx[2]);
     			set_style(div1, "margin-left", "calc(-" + /*width*/ ctx[3] + "/2)");
     			set_style(div1, "margin-top", "calc(-" + /*height*/ ctx[2] + "/2)");
     			toggle_class(div1, "morph-sm", /*fullscreen*/ ctx[1] === "mobile");
-    			toggle_class(div1, "morph-fs", /*fs*/ ctx[10]);
+    			toggle_class(div1, "morph-fs", /*fs*/ ctx[9]);
     		},
     		m(target, anchor) {
     			if (if_block) if_block.m(target, anchor);
@@ -923,8 +920,8 @@
     				toggle_class(div1, "morph-sm", /*fullscreen*/ ctx[1] === "mobile");
     			}
 
-    			if (dirty & /*fs*/ 1024) {
-    				toggle_class(div1, "morph-fs", /*fs*/ ctx[10]);
+    			if (dirty & /*fs*/ 512) {
+    				toggle_class(div1, "morph-fs", /*fs*/ ctx[9]);
     			}
     		},
     		i(local) {
@@ -943,7 +940,7 @@
     					div1,
     					morph,
     					{
-    						from: /*from*/ ctx[9],
+    						from: /*from*/ ctx[8],
     						duration: /*duration*/ ctx[5]
     					},
     					true
@@ -964,7 +961,7 @@
     				div1,
     				morph,
     				{
-    					from: /*from*/ ctx[9],
+    					from: /*from*/ ctx[8],
     					duration: /*duration*/ ctx[5]
     				},
     				false
@@ -995,14 +992,14 @@
     	return {
     		c() {
     			div = element("div");
-    			attr(div, "class", "morph-overlay svelte-1boxp9l");
+    			attr(div, "class", "morph-overlay svelte-1bv59i9");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
     			current = true;
 
     			if (!mounted) {
-    				dispose = listen(div, "click", /*click_handler_1*/ ctx[20]);
+    				dispose = listen(div, "click", /*click_handler_1*/ ctx[19]);
     				mounted = true;
     			}
     		},
@@ -1054,6 +1051,7 @@
     	let t0;
     	let div;
     	let lock_action;
+    	let rect_action;
     	let t1;
     	let if_block_anchor;
     	let current;
@@ -1073,8 +1071,8 @@
     			t1 = space();
     			if (if_block) if_block.c();
     			if_block_anchor = empty();
-    			attr(div, "class", "morph-trigger svelte-1boxp9l");
-    			set_style(div, "transition", "opacity " + /*duration*/ ctx[5] * 0.2 / 1000 + "s " + /*duration*/ ctx[5] * 0.8 / 1000 + "s");
+    			attr(div, "class", "morph-trigger svelte-1bv59i9");
+    			set_style(div, "transition", "visibility " + /*duration*/ ctx[5] * 0.2 / 1000 + "s " + /*duration*/ ctx[5] * 0.8 / 1000 + "s");
     			toggle_class(div, "morph-open", /*open*/ ctx[0]);
     		},
     		m(target, anchor) {
@@ -1085,7 +1083,6 @@
     				default_slot_or_fallback.m(div, null);
     			}
 
-    			/*div_binding*/ ctx[18](div);
     			insert(target, t1, anchor);
     			if (if_block) if_block.m(target, anchor);
     			insert(target, if_block_anchor, anchor);
@@ -1095,8 +1092,14 @@
     				dispose = [
     					listen(window, "resize", /*onwindowresize*/ ctx[17]),
     					listen(document.body, "keydown", /*close*/ ctx[12]),
-    					action_destroyer(lock_action = lock.call(null, div, /*lockOptions*/ ctx[11])),
-    					listen(div, "click", /*click_handler*/ ctx[19])
+    					action_destroyer(lock_action = lock.call(null, div, /*lockOptions*/ ctx[10])),
+    					action_destroyer(rect_action = /*rect*/ ctx[11].call(null, div, {
+    						open: /*open*/ ctx[0],
+    						innerWidth: /*innerWidth*/ ctx[7],
+    						innerHeight: /*innerHeight*/ ctx[6],
+    						fs: /*fs*/ ctx[9]
+    					})),
+    					listen(div, "click", /*click_handler*/ ctx[18])
     				];
 
     				mounted = true;
@@ -1110,10 +1113,17 @@
     			}
 
     			if (!current || dirty & /*duration*/ 32) {
-    				set_style(div, "transition", "opacity " + /*duration*/ ctx[5] * 0.2 / 1000 + "s " + /*duration*/ ctx[5] * 0.8 / 1000 + "s");
+    				set_style(div, "transition", "visibility " + /*duration*/ ctx[5] * 0.2 / 1000 + "s " + /*duration*/ ctx[5] * 0.8 / 1000 + "s");
     			}
 
-    			if (lock_action && is_function(lock_action.update) && dirty & /*lockOptions*/ 2048) lock_action.update.call(null, /*lockOptions*/ ctx[11]);
+    			if (lock_action && is_function(lock_action.update) && dirty & /*lockOptions*/ 1024) lock_action.update.call(null, /*lockOptions*/ ctx[10]);
+
+    			if (rect_action && is_function(rect_action.update) && dirty & /*open, innerWidth, innerHeight, fs*/ 705) rect_action.update.call(null, {
+    				open: /*open*/ ctx[0],
+    				innerWidth: /*innerWidth*/ ctx[7],
+    				innerHeight: /*innerHeight*/ ctx[6],
+    				fs: /*fs*/ ctx[9]
+    			});
 
     			if (dirty & /*open*/ 1) {
     				toggle_class(div, "morph-open", /*open*/ ctx[0]);
@@ -1157,7 +1167,6 @@
     			if (detaching) detach(t0);
     			if (detaching) detach(div);
     			if (default_slot_or_fallback) default_slot_or_fallback.d(detaching);
-    			/*div_binding*/ ctx[18](null);
     			if (detaching) detach(t1);
     			if (if_block) if_block.d(detaching);
     			if (detaching) detach(if_block_anchor);
@@ -1181,12 +1190,17 @@
     		{ esc = true } = $$props,
     		innerHeight,
     		innerWidth,
-    		trigger,
     		from; // true (always), false (never), 'mobile', 'auto'
 
-    	afterUpdate(() => {
-    		$$invalidate(9, from = trigger.getBoundingClientRect());
-    	});
+    	function rect(node) {
+    		function update() {
+    			$$invalidate(8, from = node.firstChild.getBoundingClientRect());
+    			console.log(from.x, from.y);
+    		}
+
+    		update();
+    		return { update };
+    	}
 
     	function close(e) {
     		if (esc && open && (e.keyCode || e.which) == 27) {
@@ -1200,13 +1214,6 @@
     	function onwindowresize() {
     		$$invalidate(7, innerWidth = window.innerWidth);
     		$$invalidate(6, innerHeight = window.innerHeight);
-    	}
-
-    	function div_binding($$value) {
-    		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			trigger = $$value;
-    			$$invalidate(8, trigger);
-    		});
     	}
 
     	const click_handler = () => $$invalidate(0, open = true);
@@ -1229,18 +1236,18 @@
 
     	$$self.$$.update = () => {
     		if ($$self.$$.dirty & /*fullscreen, width, innerWidth*/ 138) {
-    			 $$invalidate(10, fs = fullscreen === true || fullscreen === "auto" && parseFloat(width) > innerWidth);
+    			 $$invalidate(9, fs = fullscreen === true || fullscreen === "auto" && parseFloat(width) > innerWidth);
     		}
 
     		if ($$self.$$.dirty & /*lockScroll, open, innerHeight*/ 8257) {
-    			 $$invalidate(11, lockOptions = { enable: lockScroll && open, innerHeight });
+    			 $$invalidate(10, lockOptions = { enable: lockScroll && open, innerHeight });
     		}
 
     		if ($$self.$$.dirty & /*open*/ 1) {
     			 dispatch("toggle", open);
     		}
 
-    		if ($$self.$$.dirty & /*fs*/ 1024) {
+    		if ($$self.$$.dirty & /*fs*/ 512) {
     			 dispatch("adjust", fs);
     		}
     	};
@@ -1254,17 +1261,16 @@
     		duration,
     		innerHeight,
     		innerWidth,
-    		trigger,
     		from,
     		fs,
     		lockOptions,
+    		rect,
     		close,
     		lockScroll,
     		esc,
     		$$scope,
     		slots,
     		onwindowresize,
-    		div_binding,
     		click_handler,
     		click_handler_1
     	];
@@ -1273,7 +1279,7 @@
     class MorphingModal extends SvelteComponent {
     	constructor(options) {
     		super();
-    		if (!document.getElementById("svelte-1boxp9l-style")) add_css();
+    		if (!document.getElementById("svelte-1bv59i9-style")) add_css();
 
     		init(this, options, instance, create_fragment, safe_not_equal, {
     			fullscreen: 1,

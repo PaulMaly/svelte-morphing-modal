@@ -61,7 +61,6 @@
 	function rect(node) {
 		function update() {
 			from = node.firstChild.getBoundingClientRect();
-			console.log(from.x, from.y);
 		}
 		update();
 		return { update };

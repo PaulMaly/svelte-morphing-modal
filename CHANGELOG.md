@@ -1,5 +1,9 @@
 # svelte-morphing-modal changelog
 
+## 2.1.1
+* Remove forgotten `console.log`.
+* Add `no-console` to eslint.
+
 ## 2.1.0
 * Improve bounting rect tracking.
 * Change opacity to visibility to hide trigger.

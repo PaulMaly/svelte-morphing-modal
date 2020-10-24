@@ -1,5 +1,13 @@
 # svelte-morphing-modal changelog
 
+## 2.0.0
+* (BREAKING CHANGE): Now `trigget` slot become a default slot, put you content using `content` slot.
+* (BREAKING CHANGE): Use `display: contents` to trigger wrapping element.
+* Use more specific classes to prevent downstream cascade. 
+* Update & fix dependencies.
+* Formating via Prettier.
+* Add simple README.
+
 ## 1.3.1
 * Fix `lockScroll` enabled.
 * Add bundles to git.

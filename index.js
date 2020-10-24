@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.MorphingModal = factory());
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.MorphingModal = factory());
 }(this, (function () { 'use strict';
 
     function noop() { }
@@ -26,6 +26,9 @@
     }
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
+    }
+    function is_empty(obj) {
+        return Object.keys(obj).length === 0;
     }
     function create_slot(definition, ctx, $$scope, fn) {
         if (definition) {
@@ -55,6 +58,13 @@
             return $$scope.dirty | lets;
         }
         return $$scope.dirty;
+    }
+    function update_slot(slot, slot_definition, ctx, $$scope, dirty, get_slot_changes_fn, get_slot_context_fn) {
+        const slot_changes = get_slot_changes(slot_definition, $$scope, dirty, get_slot_changes_fn);
+        if (slot_changes) {
+            const slot_context = get_slot_context(slot_definition, ctx, $$scope, get_slot_context_fn);
+            slot.p(slot_context, slot_changes);
+        }
     }
     function action_destroyer(action_result) {
         return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
@@ -141,9 +151,8 @@
         return e;
     }
 
-    let stylesheet;
+    const active_docs = new Set();
     let active = 0;
-    let current_rules = {};
     // https://github.com/darkskyapp/string-hash/blob/master/index.js
     function hash(str) {
         let hash = 5381;
@@ -161,39 +170,45 @@
         }
         const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
         const name = `__svelte_${hash(rule)}_${uid}`;
+        const doc = node.ownerDocument;
+        active_docs.add(doc);
+        const stylesheet = doc.__svelte_stylesheet || (doc.__svelte_stylesheet = doc.head.appendChild(element('style')).sheet);
+        const current_rules = doc.__svelte_rules || (doc.__svelte_rules = {});
         if (!current_rules[name]) {
-            if (!stylesheet) {
-                const style = element('style');
-                document.head.appendChild(style);
-                stylesheet = style.sheet;
-            }
             current_rules[name] = true;
             stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
         }
         const animation = node.style.animation || '';
-        node.style.animation = `${animation ? `${animation}, ` : ``}${name} ${duration}ms linear ${delay}ms 1 both`;
+        node.style.animation = `${animation ? `${animation}, ` : ''}${name} ${duration}ms linear ${delay}ms 1 both`;
         active += 1;
         return name;
     }
     function delete_rule(node, name) {
-        node.style.animation = (node.style.animation || '')
-            .split(', ')
-            .filter(name
+        const previous = (node.style.animation || '').split(', ');
+        const next = previous.filter(name
             ? anim => anim.indexOf(name) < 0 // remove specific animation
             : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
-        )
-            .join(', ');
-        if (name && !--active)
-            clear_rules();
+        );
+        const deleted = previous.length - next.length;
+        if (deleted) {
+            node.style.animation = next.join(', ');
+            active -= deleted;
+            if (!active)
+                clear_rules();
+        }
     }
     function clear_rules() {
         raf(() => {
             if (active)
                 return;
-            let i = stylesheet.cssRules.length;
-            while (i--)
-                stylesheet.deleteRule(i);
-            current_rules = {};
+            active_docs.forEach(doc => {
+                const stylesheet = doc.__svelte_stylesheet;
+                let i = stylesheet.cssRules.length;
+                while (i--)
+                    stylesheet.deleteRule(i);
+                doc.__svelte_rules = {};
+            });
+            active_docs.clear();
         });
     }
 
@@ -203,7 +218,7 @@
     }
     function get_current_component() {
         if (!current_component)
-            throw new Error(`Function called outside component initialization`);
+            throw new Error('Function called outside component initialization');
         return current_component;
     }
     function afterUpdate(fn) {
@@ -253,6 +268,7 @@
                 set_current_component(component);
                 update(component.$$);
             }
+            set_current_component(null);
             dirty_components.length = 0;
             while (binding_callbacks.length)
                 binding_callbacks.pop()();
@@ -490,7 +506,7 @@
                 program.group = outros;
                 outros.r += 1;
             }
-            if (running_program) {
+            if (running_program || pending_program) {
                 pending_program = program;
             }
             else {
@@ -618,14 +634,15 @@
             context: new Map(parent_component ? parent_component.$$.context : []),
             // everything else
             callbacks: blank_object(),
-            dirty
+            dirty,
+            skip_bound: false
         };
         let ready = false;
         $$.ctx = instance
             ? instance(component, prop_values, (i, ret, ...rest) => {
                 const value = rest.length ? rest[0] : ret;
                 if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
-                    if ($$.bound[i])
+                    if (!$$.skip_bound && $$.bound[i])
                         $$.bound[i](value);
                     if (ready)
                         make_dirty(component, i);
@@ -640,8 +657,10 @@
         $$.fragment = create_fragment ? create_fragment($$.ctx) : false;
         if (options.target) {
             if (options.hydrate) {
+                const nodes = children(options.target);
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                $$.fragment && $$.fragment.l(children(options.target));
+                $$.fragment && $$.fragment.l(nodes);
+                nodes.forEach(detach);
             }
             else {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -668,8 +687,12 @@
                     callbacks.splice(index, 1);
             };
         }
-        $set() {
-            // overridden by instance, if it has props
+        $set($$props) {
+            if (this.$$set && !is_empty($$props)) {
+                this.$$.skip_bound = true;
+                this.$$set($$props);
+                this.$$.skip_bound = false;
+            }
         }
     }
 
@@ -775,79 +798,94 @@
     	return { update, destroy };
     }
 
-    /* src/MorphingModal.svelte generated by Svelte v3.19.2 */
+    /* src/MorphingModal.svelte generated by Svelte v3.29.4 */
 
     function add_css() {
     	var style = element("style");
-    	style.id = "svelte-bukqbm-style";
-    	style.textContent = ".overlay.svelte-bukqbm.svelte-bukqbm{top:0;left:0;width:100%;height:100%;z-index:800;position:fixed;overflow:hidden;background:rgba(0, 0, 0, 0.5);backdrop-filter:blur(5px)}.modal.svelte-bukqbm.svelte-bukqbm{top:50%;left:50%;z-index:900;position:fixed;overflow:auto;transform-origin:0 0}.modal.svelte-bukqbm>div.svelte-bukqbm{width:100%;height:100%;position:relative}.modal.fs.svelte-bukqbm.svelte-bukqbm{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}.trigger.svelte-bukqbm.svelte-bukqbm{display:inline-block}.trigger.open.svelte-bukqbm.svelte-bukqbm{opacity:0;pointer-events:none;transition:opacity 0.1s !important}@media screen and (max-width: 600px){.modal.sm.svelte-bukqbm.svelte-bukqbm{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}}";
+    	style.id = "svelte-1boxp9l-style";
+    	style.textContent = ".morph-overlay.svelte-1boxp9l.svelte-1boxp9l{top:0;left:0;width:100%;height:100%;z-index:800;position:fixed;overflow:hidden;background:rgba(0, 0, 0, 0.5);backdrop-filter:blur(5px)}.morph-modal.svelte-1boxp9l.svelte-1boxp9l{top:50%;left:50%;z-index:900;position:fixed;overflow:auto;transform-origin:0 0}.morph-modal.svelte-1boxp9l>div.svelte-1boxp9l{width:100%;height:100%;position:relative}.morph-modal.morph-fs.svelte-1boxp9l.svelte-1boxp9l{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}.morph-trigger.svelte-1boxp9l.svelte-1boxp9l{display:contents}.morph-trigger.morph-open.svelte-1boxp9l.svelte-1boxp9l{opacity:0;pointer-events:none;transition:opacity 0.1s !important}@media screen and (max-width: 600px){.morph-modal.morph-sm.svelte-1boxp9l.svelte-1boxp9l{top:0% !important;left:0% !important;margin:0 !important;width:100% !important;height:100% !important;transform:none !important}}";
     	append(document.head, style);
     }
 
-    const get_trigger_slot_changes = dirty => ({});
-    const get_trigger_slot_context = ctx => ({});
+    const get_content_slot_changes = dirty => ({});
+    const get_content_slot_context = ctx => ({});
 
-    // (129:0) {#if open}
+    // (12:7)    
+    function fallback_block_1(ctx) {
+    	let button;
+
+    	return {
+    		c() {
+    			button = element("button");
+    			button.textContent = "To replace trigger use default slot";
+    			attr(button, "type", "button");
+    		},
+    		m(target, anchor) {
+    			insert(target, button, anchor);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(button);
+    		}
+    	};
+    }
+
+    // (17:0) {#if open}
     function create_if_block(ctx) {
-    	let t0;
+    	let t;
     	let div1;
     	let div0;
-    	let t1;
     	let div0_intro;
     	let div0_outro;
     	let div1_transition;
     	let current;
     	let if_block = /*overlay*/ ctx[4] && create_if_block_1(ctx);
-    	const default_slot_template = /*$$slots*/ ctx[17].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[16], null);
+    	const content_slot_template = /*#slots*/ ctx[16].content;
+    	const content_slot = create_slot(content_slot_template, ctx, /*$$scope*/ ctx[15], get_content_slot_context);
+    	const content_slot_or_fallback = content_slot || fallback_block();
 
     	return {
     		c() {
     			if (if_block) if_block.c();
-    			t0 = space();
+    			t = space();
     			div1 = element("div");
     			div0 = element("div");
-
-    			if (!default_slot) {
-    				t1 = text("To replace content use default slot");
-    			}
-
-    			if (default_slot) default_slot.c();
-    			attr(div0, "class", "svelte-bukqbm");
-    			attr(div1, "class", "modal svelte-bukqbm");
+    			if (content_slot_or_fallback) content_slot_or_fallback.c();
+    			attr(div0, "class", "svelte-1boxp9l");
+    			attr(div1, "class", "morph-modal svelte-1boxp9l");
     			set_style(div1, "width", /*width*/ ctx[3]);
     			set_style(div1, "height", /*height*/ ctx[2]);
     			set_style(div1, "margin-left", "calc(-" + /*width*/ ctx[3] + "/2)");
     			set_style(div1, "margin-top", "calc(-" + /*height*/ ctx[2] + "/2)");
-    			toggle_class(div1, "sm", /*fullscreen*/ ctx[1] === "mobile");
-    			toggle_class(div1, "fs", /*fs*/ ctx[10]);
+    			toggle_class(div1, "morph-sm", /*fullscreen*/ ctx[1] === "mobile");
+    			toggle_class(div1, "morph-fs", /*fs*/ ctx[10]);
     		},
     		m(target, anchor) {
     			if (if_block) if_block.m(target, anchor);
-    			insert(target, t0, anchor);
+    			insert(target, t, anchor);
     			insert(target, div1, anchor);
     			append(div1, div0);
 
-    			if (!default_slot) {
-    				append(div0, t1);
-    			}
-
-    			if (default_slot) {
-    				default_slot.m(div0, null);
+    			if (content_slot_or_fallback) {
+    				content_slot_or_fallback.m(div0, null);
     			}
 
     			current = true;
     		},
-    		p(ctx, dirty) {
+    		p(new_ctx, dirty) {
+    			ctx = new_ctx;
+
     			if (/*overlay*/ ctx[4]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
-    					transition_in(if_block, 1);
+
+    					if (dirty & /*overlay*/ 16) {
+    						transition_in(if_block, 1);
+    					}
     				} else {
     					if_block = create_if_block_1(ctx);
     					if_block.c();
     					transition_in(if_block, 1);
-    					if_block.m(t0.parentNode, t0);
+    					if_block.m(t.parentNode, t);
     				}
     			} else if (if_block) {
     				group_outros();
@@ -859,8 +897,10 @@
     				check_outros();
     			}
 
-    			if (default_slot && default_slot.p && dirty & /*$$scope*/ 65536) {
-    				default_slot.p(get_slot_context(default_slot_template, ctx, /*$$scope*/ ctx[16], null), get_slot_changes(default_slot_template, /*$$scope*/ ctx[16], dirty, null));
+    			if (content_slot) {
+    				if (content_slot.p && dirty & /*$$scope*/ 32768) {
+    					update_slot(content_slot, content_slot_template, ctx, /*$$scope*/ ctx[15], dirty, get_content_slot_changes, get_content_slot_context);
+    				}
     			}
 
     			if (!current || dirty & /*width*/ 8) {
@@ -880,17 +920,17 @@
     			}
 
     			if (dirty & /*fullscreen*/ 2) {
-    				toggle_class(div1, "sm", /*fullscreen*/ ctx[1] === "mobile");
+    				toggle_class(div1, "morph-sm", /*fullscreen*/ ctx[1] === "mobile");
     			}
 
     			if (dirty & /*fs*/ 1024) {
-    				toggle_class(div1, "fs", /*fs*/ ctx[10]);
+    				toggle_class(div1, "morph-fs", /*fs*/ ctx[10]);
     			}
     		},
     		i(local) {
     			if (current) return;
     			transition_in(if_block);
-    			transition_in(default_slot, local);
+    			transition_in(content_slot_or_fallback, local);
 
     			add_render_callback(() => {
     				if (div0_outro) div0_outro.end(1);
@@ -916,7 +956,7 @@
     		},
     		o(local) {
     			transition_out(if_block);
-    			transition_out(default_slot, local);
+    			transition_out(content_slot_or_fallback, local);
     			if (div0_intro) div0_intro.invalidate();
     			div0_outro = create_out_transition(div0, blur, { duration: /*duration*/ ctx[5] });
 
@@ -935,33 +975,40 @@
     		},
     		d(detaching) {
     			if (if_block) if_block.d(detaching);
-    			if (detaching) detach(t0);
+    			if (detaching) detach(t);
     			if (detaching) detach(div1);
-    			if (default_slot) default_slot.d(detaching);
+    			if (content_slot_or_fallback) content_slot_or_fallback.d(detaching);
     			if (detaching && div0_outro) div0_outro.end();
     			if (detaching && div1_transition) div1_transition.end();
     		}
     	};
     }
 
-    // (130:2) {#if overlay}
+    // (18:1) {#if overlay}
     function create_if_block_1(ctx) {
     	let div;
     	let div_transition;
     	let current;
+    	let mounted;
     	let dispose;
 
     	return {
     		c() {
     			div = element("div");
-    			attr(div, "class", "overlay svelte-bukqbm");
+    			attr(div, "class", "morph-overlay svelte-1boxp9l");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
     			current = true;
-    			dispose = listen(div, "click", /*click_handler_1*/ ctx[21]);
+
+    			if (!mounted) {
+    				dispose = listen(div, "click", /*click_handler_1*/ ctx[20]);
+    				mounted = true;
+    			}
     		},
-    		p: noop,
+    		p(new_ctx, dirty) {
+    			ctx = new_ctx;
+    		},
     		i(local) {
     			if (current) return;
 
@@ -980,7 +1027,25 @@
     		d(detaching) {
     			if (detaching) detach(div);
     			if (detaching && div_transition) div_transition.end();
+    			mounted = false;
     			dispose();
+    		}
+    	};
+    }
+
+    // (34:24) To replace content use `content` slot
+    function fallback_block(ctx) {
+    	let t;
+
+    	return {
+    		c() {
+    			t = text("To replace content use `content` slot");
+    		},
+    		m(target, anchor) {
+    			insert(target, t, anchor);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(t);
     		}
     	};
     }
@@ -988,68 +1053,60 @@
     function create_fragment(ctx) {
     	let t0;
     	let div;
-    	let button;
     	let lock_action;
-    	let t2;
+    	let t1;
     	let if_block_anchor;
     	let current;
+    	let mounted;
     	let dispose;
-    	add_render_callback(/*onwindowresize*/ ctx[18]);
-    	const trigger_slot_template = /*$$slots*/ ctx[17].trigger;
-    	const trigger_slot = create_slot(trigger_slot_template, ctx, /*$$scope*/ ctx[16], get_trigger_slot_context);
+    	add_render_callback(/*onwindowresize*/ ctx[17]);
+    	const default_slot_template = /*#slots*/ ctx[16].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[15], null);
+    	const default_slot_or_fallback = default_slot || fallback_block_1();
     	let if_block = /*open*/ ctx[0] && create_if_block(ctx);
 
     	return {
     		c() {
     			t0 = space();
     			div = element("div");
-
-    			if (!trigger_slot) {
-    				button = element("button");
-    				button.textContent = "To replace trigger use 'trigger' slot";
-    			}
-
-    			if (trigger_slot) trigger_slot.c();
-    			t2 = space();
+    			if (default_slot_or_fallback) default_slot_or_fallback.c();
+    			t1 = space();
     			if (if_block) if_block.c();
     			if_block_anchor = empty();
-
-    			if (!trigger_slot) {
-    				attr(button, "type", "button");
-    			}
-
-    			attr(div, "class", "trigger svelte-bukqbm");
+    			attr(div, "class", "morph-trigger svelte-1boxp9l");
     			set_style(div, "transition", "opacity " + /*duration*/ ctx[5] * 0.2 / 1000 + "s " + /*duration*/ ctx[5] * 0.8 / 1000 + "s");
-    			toggle_class(div, "open", /*open*/ ctx[0]);
+    			toggle_class(div, "morph-open", /*open*/ ctx[0]);
     		},
     		m(target, anchor) {
     			insert(target, t0, anchor);
     			insert(target, div, anchor);
 
-    			if (!trigger_slot) {
-    				append(div, button);
+    			if (default_slot_or_fallback) {
+    				default_slot_or_fallback.m(div, null);
     			}
 
-    			if (trigger_slot) {
-    				trigger_slot.m(div, null);
-    			}
-
-    			/*div_binding*/ ctx[19](div);
-    			insert(target, t2, anchor);
+    			/*div_binding*/ ctx[18](div);
+    			insert(target, t1, anchor);
     			if (if_block) if_block.m(target, anchor);
     			insert(target, if_block_anchor, anchor);
     			current = true;
 
-    			dispose = [
-    				listen(window, "resize", /*onwindowresize*/ ctx[18]),
-    				listen(document.body, "keydown", /*close*/ ctx[12]),
-    				action_destroyer(lock_action = lock.call(null, div, /*lockOptions*/ ctx[11])),
-    				listen(div, "click", /*click_handler*/ ctx[20])
-    			];
+    			if (!mounted) {
+    				dispose = [
+    					listen(window, "resize", /*onwindowresize*/ ctx[17]),
+    					listen(document.body, "keydown", /*close*/ ctx[12]),
+    					action_destroyer(lock_action = lock.call(null, div, /*lockOptions*/ ctx[11])),
+    					listen(div, "click", /*click_handler*/ ctx[19])
+    				];
+
+    				mounted = true;
+    			}
     		},
     		p(ctx, [dirty]) {
-    			if (trigger_slot && trigger_slot.p && dirty & /*$$scope*/ 65536) {
-    				trigger_slot.p(get_slot_context(trigger_slot_template, ctx, /*$$scope*/ ctx[16], get_trigger_slot_context), get_slot_changes(trigger_slot_template, /*$$scope*/ ctx[16], dirty, get_trigger_slot_changes));
+    			if (default_slot) {
+    				if (default_slot.p && dirty & /*$$scope*/ 32768) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[15], dirty, null, null);
+    				}
     			}
 
     			if (!current || dirty & /*duration*/ 32) {
@@ -1059,13 +1116,16 @@
     			if (lock_action && is_function(lock_action.update) && dirty & /*lockOptions*/ 2048) lock_action.update.call(null, /*lockOptions*/ ctx[11]);
 
     			if (dirty & /*open*/ 1) {
-    				toggle_class(div, "open", /*open*/ ctx[0]);
+    				toggle_class(div, "morph-open", /*open*/ ctx[0]);
     			}
 
     			if (/*open*/ ctx[0]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
-    					transition_in(if_block, 1);
+
+    					if (dirty & /*open*/ 1) {
+    						transition_in(if_block, 1);
+    					}
     				} else {
     					if_block = create_if_block(ctx);
     					if_block.c();
@@ -1084,29 +1144,31 @@
     		},
     		i(local) {
     			if (current) return;
-    			transition_in(trigger_slot, local);
+    			transition_in(default_slot_or_fallback, local);
     			transition_in(if_block);
     			current = true;
     		},
     		o(local) {
-    			transition_out(trigger_slot, local);
+    			transition_out(default_slot_or_fallback, local);
     			transition_out(if_block);
     			current = false;
     		},
     		d(detaching) {
     			if (detaching) detach(t0);
     			if (detaching) detach(div);
-    			if (trigger_slot) trigger_slot.d(detaching);
-    			/*div_binding*/ ctx[19](null);
-    			if (detaching) detach(t2);
+    			if (default_slot_or_fallback) default_slot_or_fallback.d(detaching);
+    			/*div_binding*/ ctx[18](null);
+    			if (detaching) detach(t1);
     			if (if_block) if_block.d(detaching);
     			if (detaching) detach(if_block_anchor);
+    			mounted = false;
     			run_all(dispose);
     		}
     	};
     }
 
     function instance($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
     	const dispatch = createEventDispatcher();
 
     	let { fullscreen = "auto" } = $$props,
@@ -1135,8 +1197,6 @@
     		}
     	}
 
-    	let { $$slots = {}, $$scope } = $$props;
-
     	function onwindowresize() {
     		$$invalidate(7, innerWidth = window.innerWidth);
     		$$invalidate(6, innerHeight = window.innerHeight);
@@ -1144,14 +1204,15 @@
 
     	function div_binding($$value) {
     		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			$$invalidate(8, trigger = $$value);
+    			trigger = $$value;
+    			$$invalidate(8, trigger);
     		});
     	}
 
     	const click_handler = () => $$invalidate(0, open = true);
     	const click_handler_1 = () => $$invalidate(0, open = false);
 
-    	$$self.$set = $$props => {
+    	$$self.$$set = $$props => {
     		if ("fullscreen" in $$props) $$invalidate(1, fullscreen = $$props.fullscreen);
     		if ("height" in $$props) $$invalidate(2, height = $$props.height);
     		if ("width" in $$props) $$invalidate(3, width = $$props.width);
@@ -1160,7 +1221,7 @@
     		if ("open" in $$props) $$invalidate(0, open = $$props.open);
     		if ("speed" in $$props) $$invalidate(5, duration = $$props.speed);
     		if ("esc" in $$props) $$invalidate(14, esc = $$props.esc);
-    		if ("$$scope" in $$props) $$invalidate(16, $$scope = $$props.$$scope);
+    		if ("$$scope" in $$props) $$invalidate(15, $$scope = $$props.$$scope);
     	};
 
     	let fs;
@@ -1200,9 +1261,8 @@
     		close,
     		lockScroll,
     		esc,
-    		dispatch,
     		$$scope,
-    		$$slots,
+    		slots,
     		onwindowresize,
     		div_binding,
     		click_handler,
@@ -1213,7 +1273,7 @@
     class MorphingModal extends SvelteComponent {
     	constructor(options) {
     		super();
-    		if (!document.getElementById("svelte-bukqbm-style")) add_css();
+    		if (!document.getElementById("svelte-1boxp9l-style")) add_css();
 
     		init(this, options, instance, create_fragment, safe_not_equal, {
     			fullscreen: 1,

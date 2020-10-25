@@ -801,7 +801,7 @@ function add_css() {
 const get_content_slot_changes = dirty => ({});
 const get_content_slot_context = ctx => ({});
 
-// (12:7)    
+// (11:7)    
 function fallback_block_1(ctx) {
 	let button;
 
@@ -820,7 +820,7 @@ function fallback_block_1(ctx) {
 	};
 }
 
-// (17:0) {#if open}
+// (16:0) {#if open}
 function create_if_block(ctx) {
 	let t;
 	let div1;
@@ -975,7 +975,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (18:1) {#if overlay}
+// (17:1) {#if overlay}
 function create_if_block_1(ctx) {
 	let div;
 	let div_transition;
@@ -993,7 +993,7 @@ function create_if_block_1(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(div, "click", /*click_handler_1*/ ctx[19]);
+				dispose = listen(div, "click", /*click_handler*/ ctx[18]);
 				mounted = true;
 			}
 		},
@@ -1024,7 +1024,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (34:24) To replace content use `content` slot
+// (33:24) To replace content use `content` slot
 function fallback_block(ctx) {
 	let t;
 
@@ -1092,8 +1092,7 @@ function create_fragment(ctx) {
 						innerWidth: /*innerWidth*/ ctx[7],
 						innerHeight: /*innerHeight*/ ctx[6],
 						fs: /*fs*/ ctx[9]
-					})),
-					listen(div, "click", /*click_handler*/ ctx[18])
+					}))
 				];
 
 				mounted = true;
@@ -1209,8 +1208,7 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(6, innerHeight = window.innerHeight);
 	}
 
-	const click_handler = () => $$invalidate(0, open = true);
-	const click_handler_1 = () => $$invalidate(0, open = false);
+	const click_handler = () => $$invalidate(0, open = false);
 
 	$$self.$$set = $$props => {
 		if ("fullscreen" in $$props) $$invalidate(1, fullscreen = $$props.fullscreen);
@@ -1264,8 +1262,7 @@ function instance($$self, $$props, $$invalidate) {
 		$$scope,
 		slots,
 		onwindowresize,
-		click_handler,
-		click_handler_1
+		click_handler
 	];
 }
 

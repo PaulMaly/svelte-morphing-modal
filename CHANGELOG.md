@@ -1,5 +1,8 @@
 # svelte-morphing-modal changelog
 
+## 2.2.0
+* (BREAKING CHANGE): Remove click handler from `trigger` wrapper. Seems opening should be managed by parent component. Now you should always use `open` prop to show/hide modal content.
+
 ## 2.1.1
 * Remove forgotten `console.log`.
 * Add `no-console` to eslint.

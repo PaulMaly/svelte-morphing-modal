@@ -4,7 +4,6 @@
 <div
 	use:lock={lockOptions}
 	use:rect={{ open, innerWidth, innerHeight, fs }}
-	on:click={() => (open = true)}
 	class:morph-open={open}
 	class="morph-trigger"
 	style="transition: visibility {(duration * 0.2) / 1000}s {(duration * 0.8) / 1000}s;"

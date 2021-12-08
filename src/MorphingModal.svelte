@@ -129,7 +129,7 @@
 		margin: 0 !important;
 		width: 100% !important;
 		height: 100% !important;
-		transform: none !important;
+		/* transform: none !important; */
 	}
 	.morph-trigger {
 		display: contents;
@@ -146,7 +146,7 @@
 			margin: 0 !important;
 			width: 100% !important;
 			height: 100% !important;
-			transform: none !important;
+			/* transform: none !important; */
 		}
 	}
 </style>
